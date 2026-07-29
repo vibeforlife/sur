@@ -50,7 +50,7 @@
       color: #9ca3af;
       margin-bottom: 4px;
     }
-    input, button, select {
+    input, button {
       font-family: inherit;
       font-size: 14px;
     }
@@ -178,6 +178,12 @@
       color: #6b7280;
       margin-top: 4px;
     }
+    .link-text {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 2px;
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -187,7 +193,7 @@
       <div style="margin-top: 6px; font-weight: 600;">Karaoke Night Queue</div>
     </div>
     <div style="font-size: 13px; color: #9ca3af;" id="connection-status">
-      Connecting to Firebase…
+      Connecting…
     </div>
   </header>
 
@@ -217,6 +223,12 @@
             <input id="guest-singer" placeholder="e.g. Alex" />
           </div>
         </div>
+        <div class="row">
+          <div>
+            <div class="label">YouTube link (optional)</div>
+            <input id="guest-youtube" placeholder="e.g. https://youtu.be/..." />
+          </div>
+        </div>
         <button id="guest-submit-btn">
           ➕ Add to queue
         </button>
@@ -228,6 +240,7 @@
         <div class="status">
           <strong id="guest-current-title">Idle</strong><br />
           <span id="guest-current-meta" class="queue-meta"></span>
+          <div id="guest-current-link" class="link-text"></div>
         </div>
       </div>
 
@@ -241,7 +254,7 @@
       </div>
     </section>
 
-    <!-- Admin section (contains login + controls) -->
+    <!-- Admin section -->
     <section id="admin-section" style="display:none;">
       <div class="card">
         <h2>Admin login</h2>
@@ -285,6 +298,7 @@
           <div class="status">
             <strong id="admin-current-title">Idle</strong><br />
             <span id="admin-current-meta" class="queue-meta"></span>
+            <div id="admin-current-link" class="link-text"></div>
           </div>
         </div>
 
@@ -311,6 +325,7 @@
       <div>
         <div class="big-now-playing" id="display-current-title">Idle</div>
         <div class="big-meta" id="display-current-meta"></div>
+        <div id="display-current-link" class="link-text"></div>
         <div class="status" style="margin-bottom: 8px;">
           <span>Up next:</span>
         </div>
@@ -331,8 +346,6 @@
       arrayUnion
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-    // Firebase config from your project screenshot
-    // API key, auth domain, project ID and app ID are safe to embed in client web apps.
     const firebaseConfig = {
       apiKey: "AlzaSyAlZn8z5-slxw4betwOUtmvDlr6gNnJxB8",
       authDomain: "surhonaho.firebaseapp.com",
@@ -385,9 +398,16 @@
     }
 
     async function ensureStateDoc() {
-      const snap = await getDoc(stateRef);
-      if (!snap.exists()) {
-        await setDoc(stateRef, { current: null, queue: [] });
+      try {
+        const snap = await getDoc(stateRef);
+        if (!snap.exists()) {
+          await setDoc(stateRef, { current: null, queue: [] });
+        }
+      } catch (err) {
+        console.error("ensureStateDoc error", err);
+        // Show a friendly message but still let UI load; listeners will connect once online.
+        showError("Failed to get document (maybe offline). Queue will reconnect automatically.");
+        setConnectionStatus("Offline?");
       }
     }
 
@@ -398,11 +418,15 @@
         const li = document.createElement("li");
         li.className = "queue-item";
         const left = document.createElement("div");
+        const link = item.youtube && item.youtube.trim()
+          ? `<div class="link-text">${item.youtube.trim()}</div>`
+          : "";
         left.innerHTML = `
           <div>${index + 1}. ${item.title || "Untitled"}</div>
           <div class="queue-meta">
             ${item.artist || "Unknown"}<span class="badge">${item.singer || "?"}</span>
           </div>
+          ${link}
         `;
         li.appendChild(left);
         ulEl.appendChild(li);
@@ -416,11 +440,15 @@
         const li = document.createElement("li");
         li.className = "queue-item";
         const left = document.createElement("div");
+        const link = item.youtube && item.youtube.trim()
+          ? `<div class="link-text">${item.youtube.trim()}</div>`
+          : "";
         left.innerHTML = `
           <div>${index + 1}. ${item.title || "Untitled"}</div>
           <div class="queue-meta">
             ${item.artist || "Unknown"}<span class="badge">${item.singer || "?"}</span>
           </div>
+          ${link}
         `;
         const btn = document.createElement("button");
         btn.textContent = "▶ Play";
@@ -438,13 +466,16 @@
       document.getElementById("guest-total-requests").textContent = String(queue.length);
       const curTitleEl = document.getElementById("guest-current-title");
       const curMetaEl = document.getElementById("guest-current-meta");
+      const curLinkEl = document.getElementById("guest-current-link");
 
       if (current) {
         curTitleEl.textContent = current.title || "Untitled";
         curMetaEl.textContent = `${current.artist || "Unknown"} — ${current.singer || "?"}`;
+        curLinkEl.textContent = current.youtube ? current.youtube : "";
       } else {
         curTitleEl.textContent = "Idle";
         curMetaEl.textContent = "";
+        curLinkEl.textContent = "";
       }
 
       renderQueueList(document.getElementById("guest-queue-list"), queue);
@@ -457,13 +488,16 @@
       document.getElementById("admin-total-requests").textContent = String(queue.length);
       const curTitleEl = document.getElementById("admin-current-title");
       const curMetaEl = document.getElementById("admin-current-meta");
+      const curLinkEl = document.getElementById("admin-current-link");
 
       if (current) {
         curTitleEl.textContent = current.title || "Untitled";
         curMetaEl.textContent = `${current.artist || "Unknown"} — ${current.singer || "?"}`;
+        curLinkEl.textContent = current.youtube ? current.youtube : "";
       } else {
         curTitleEl.textContent = "Idle";
         curMetaEl.textContent = "";
+        curLinkEl.textContent = "";
       }
 
       renderAdminQueueList(queue, onPlay);
@@ -475,27 +509,33 @@
 
       const curTitleEl = document.getElementById("display-current-title");
       const curMetaEl = document.getElementById("display-current-meta");
+      const curLinkEl = document.getElementById("display-current-link");
       const listEl = document.getElementById("display-queue-list");
 
       if (current) {
         curTitleEl.textContent = current.title || "Untitled";
         curMetaEl.textContent = `${current.artist || "Unknown"} — ${current.singer || "?"}`;
+        curLinkEl.textContent = current.youtube ? current.youtube : "";
       } else {
         curTitleEl.textContent = "Idle";
         curMetaEl.textContent = "";
+        curLinkEl.textContent = "";
       }
 
       listEl.innerHTML = "";
       queue.forEach((item, index) => {
         const div = document.createElement("div");
         div.className = "big-queue-item";
-        div.textContent = `${index + 1}. ${item.title || "Untitled"} — ${item.singer || "?"}`;
+        const link = item.youtube && item.youtube.trim()
+          ? ` • ${item.youtube.trim()}`
+          : "";
+        div.textContent = `${index + 1}. ${item.title || "Untitled"} — ${item.singer || "?"}${link}`;
         listEl.appendChild(div);
       });
     }
 
     // Firestore write helpers
-    async function addGuestRequest({ title, artist, singer }) {
+    async function addGuestRequest({ title, artist, singer, youtube }) {
       if (!title || !singer) {
         throw new Error("Song title and your name are required.");
       }
@@ -503,6 +543,7 @@
         title: title.trim(),
         artist: (artist || "").trim(),
         singer: singer.trim(),
+        youtube: (youtube || "").trim(),
         createdAt: Date.now()
       };
       await ensureStateDoc();
@@ -548,7 +589,6 @@
       );
     }
 
-    // Admin password gate (front‑end only)
     function setupAdminLogin() {
       const input = document.getElementById("admin-password-input");
       const btn = document.getElementById("admin-login-btn");
@@ -567,7 +607,6 @@
       };
     }
 
-    // Mode bootstrap
     (function init() {
       const mode = getMode();
       setModeUI(mode);
@@ -583,16 +622,18 @@
           const title = document.getElementById("guest-title").value;
           const artist = document.getElementById("guest-artist").value;
           const singer = document.getElementById("guest-singer").value;
+          const youtube = document.getElementById("guest-youtube").value;
           const feedback = document.getElementById("guest-feedback");
 
           feedback.textContent = "";
           submitBtn.disabled = true;
           try {
-            await addGuestRequest({ title, artist, singer });
+            await addGuestRequest({ title, artist, singer, youtube });
             feedback.textContent = "Added!";
             document.getElementById("guest-title").value = "";
             document.getElementById("guest-artist").value = "";
             document.getElementById("guest-singer").value = "";
+            document.getElementById("guest-youtube").value = "";
           } catch (err) {
             console.error(err);
             feedback.textContent = err.message || "Error adding song.";
