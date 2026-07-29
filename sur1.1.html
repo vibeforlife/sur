@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Karaoke Night Queue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+  <style>
+    :root{--bg:#050816;--surface:#0d1426;--surface-2:#121b31;--muted:#91a0bd;--text:#edf2ff;--border:rgba(255,255,255,.10);--primary:#7c5cff;--primary-2:#37b6ff;--success:#20c997;--danger:#ff6b81;--warning:#ffc857;--space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--radius-sm:.5rem;--radius-md:.875rem;--radius-lg:1.25rem;--radius-xl:1.75rem;--shadow:0 20px 50px rgba(0,0,0,.35);--font:'Satoshi',Inter,system-ui,sans-serif}
+    *{box-sizing:border-box} html,body{margin:0;padding:0;background:radial-gradient(circle at top,#16213f 0,#050816 45%,#02040b 100%);color:var(--text);font-family:var(--font);min-height:100%} body{min-height:100vh}
+    button,input,textarea,select{font:inherit} button{cursor:pointer}
+    .hidden{display:none!important}
+    .wrap{max-width:980px;margin:0 auto;padding:var(--space-4)}
+    .top{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-4);padding:var(--space-5);border:1px solid var(--border);border-radius:var(--radius-xl);background:linear-gradient(145deg,rgba(124,92,255,.18),rgba(55,182,255,.08) 35%,rgba(13,20,38,.95) 70%);box-shadow:var(--shadow)}
+    .brand h1{margin:0;font-size:clamp(1.6rem,1.1rem + 1.7vw,2.2rem);line-height:1.05}.brand p{margin:.55rem 0 0;color:var(--muted);max-width:40rem;font-size:1rem}
+    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem .8rem;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);font-size:.83rem;font-weight:700}
+    .tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:var(--space-4)}
+    .tab{border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--text);padding:.8rem 1rem;border-radius:999px;font-weight:800}.tab.active{background:linear-gradient(135deg,var(--primary),var(--primary-2));border-color:transparent}
+    .card{margin-top:var(--space-4);padding:var(--space-5);border:1px solid var(--border);border-radius:var(--radius-xl);background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02));box-shadow:var(--shadow)}
+    .title{font-size:1.05rem;font-weight:900;margin:0 0 .35rem}.sub{color:var(--muted);margin:0 0 1rem;font-size:.96rem}
+    .grid{display:grid;gap:.9rem}.grid.two{grid-template-columns:1fr 1fr}.field{display:grid;gap:.4rem}.field label{font-size:.84rem;font-weight:800;color:#d8e2ff}.field input,.field textarea,.field select{width:100%;background:#07101f;border:1px solid var(--border);border-radius:1rem;padding:.95rem 1rem;color:var(--text);outline:none}.field textarea{min-height:110px;resize:vertical}
+    .actions{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1rem}.btn{border:0;border-radius:999px;padding:.9rem 1.1rem;font-weight:900}.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff}.btn-secondary{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--border)}.btn-danger{background:rgba(255,107,129,.14);color:#ffdce2;border:1px solid rgba(255,107,129,.4)}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-top:1rem}.stat{padding:1rem;border-radius:1.1rem;border:1px solid var(--border);background:#09101f}.stat .k{color:var(--muted);font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.stat .v{font-size:1.45rem;font-weight:900;margin-top:.25rem}
+    .queue{display:grid;gap:.8rem}.item{display:flex;justify-content:space-between;gap:.8rem;padding:1rem;border-radius:1rem;border:1px solid var(--border);background:#09101f}.item h3{margin:0 0 .25rem;font-size:1rem}.item p{margin:0;color:var(--muted);font-size:.9rem}.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.55rem}.chip{padding:.35rem .6rem;border-radius:999px;border:1px solid var(--border);font-size:.75rem;font-weight:800;color:var(--muted)}
+    .item-actions{display:flex;flex-direction:column;gap:.45rem}.item-actions .btn{padding:.55rem .8rem;font-size:.8rem}
+    .hint{font-size:.85rem;color:var(--muted);margin-top:.8rem;word-break:break-all}
+    .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#111a31;border:1px solid var(--border);padding:.8rem 1rem;border-radius:999px;display:none;z-index:99}
+    .display-page{min-height:100vh;padding:1.1rem;background:radial-gradient(circle at top,#0d1530 0,#040812 55%,#02040b 100%)}
+    .display-shell{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(320px,1fr);gap:1rem;min-height:calc(100vh - 2.2rem)}
+    .display-card{border:1px solid var(--border);border-radius:2rem;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));box-shadow:var(--shadow);padding:1.1rem}
+    .display-card h2{margin:0 0 .35rem;font-size:1.05rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.display-song{font-size:clamp(1.9rem,1.2rem + 2vw,3.6rem);font-weight:900;line-height:1.02;margin:.15rem 0 .4rem}.display-meta{color:var(--muted);font-size:1.05rem}.display-frame{margin-top:1rem;width:100%;aspect-ratio:16/9;border:0;border-radius:1.5rem;background:#000}.display-next{display:grid;gap:.75rem;margin-top:1rem}.display-next .next-item{padding:.9rem;border-radius:1rem;background:#09101f;border:1px solid var(--border)}
+    @media (max-width: 860px){.grid.two,.stats,.display-shell{grid-template-columns:1fr}.top{flex-direction:column}.item{flex-direction:column}.item-actions{flex-direction:row;flex-wrap:wrap}.wrap{padding:.85rem}.card,.top{padding:1rem}}
+  </style>
+</head>
+<body>
+  <main id="appRoot" class="wrap">
+    <section class="top">
+      <div class="brand">
+        <h1>🎤 Karaoke Night Queue</h1>
+        <p>Guests submit songs from their phones, you run admin from your phone, and the big screen stays on a dedicated live display view.</p>
+      </div>
+      <div class="badge" id="modePill">Guest mode</div>
+    </section>
+
+    <nav class="tabs" aria-label="App sections">
+      <button class="tab active" data-view="request">Guest Request</button>
+      <button class="tab" data-view="admin">Admin</button>
+      <button class="tab" data-view="settings">Settings</button>
+    </nav>
+
+    <section id="requestView" class="card">
+      <h2 class="title">Request a song</h2>
+      <p class="sub">Share the guest link with friends. Their requests sync into Firestore in realtime.</p>
+      <div class="grid two">
+        <div class="field"><label>Your name</label><input id="guestName" placeholder="Alex" /></div>
+        <div class="field"><label>Song title</label><input id="songTitle" placeholder="Livin' on a Prayer" /></div>
+      </div>
+      <div class="grid two" style="margin-top:.9rem">
+        <div class="field"><label>Artist</label><input id="songArtist" placeholder="Bon Jovi" /></div>
+        <div class="field"><label>YouTube karaoke link</label><input id="youtubeLink" placeholder="https://www.youtube.com/watch?v=..." /></div>
+      </div>
+      <div class="field" style="margin-top:.9rem"><label>Notes</label><textarea id="notes" placeholder="Any intro, key, or special request"></textarea></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="submitBtn">Add request</button>
+        <button class="btn btn-secondary" id="copyGuestBtn">Copy guest link</button>
+      </div>
+      <div class="hint">Guest link: <span id="guestLinkText"></span></div>
+      <div class="stats">
+        <div class="stat"><div class="k">Total requests</div><div class="v" id="totalRequests">0</div></div>
+        <div class="stat"><div class="k">Now singing</div><div class="v" id="nowPlaying">—</div></div>
+        <div class="stat"><div class="k">Queue status</div><div class="v" id="queueStatus">Idle</div></div>
+      </div>
+    </section>
+
+    <section id="adminView" class="card hidden">
+      <h2 class="title">Admin panel</h2>
+      <p class="sub">Use this on your phone while the TV or projector stays on the display link.</p>
+      <div id="adminLoginBox">
+        <div class="field"><label>Admin password</label><input id="adminPass" type="password" placeholder="Enter password" /></div>
+        <div class="actions"><button class="btn btn-primary" id="loginBtn">Unlock admin</button></div>
+      </div>
+      <div id="adminPanel" class="hidden">
+        <div class="actions" style="margin-top:0">
+          <div class="badge" id="syncBadge">Offline</div>
+          <button class="btn btn-secondary" id="playNextBtn">Play next</button>
+          <button class="btn btn-secondary" id="openCurrentBtn">Open current song</button>
+          <button class="btn btn-danger" id="clearBtn">Clear queue</button>
+        </div>
+        <div class="queue" id="queueList" style="margin-top:1rem"></div>
+      </div>
+    </section>
+
+    <section id="settingsView" class="card hidden">
+      <h2 class="title">Firebase setup</h2>
+      <p class="sub">This version already contains your Firebase web config in the file. You only need to set the admin password and connect.</p>
+      <div class="grid two">
+        <div class="field"><label>Firebase API key</label><input id="apiKey" /></div>
+        <div class="field"><label>Auth domain</label><input id="authDomain" /></div>
+      </div>
+      <div class="grid two" style="margin-top:.9rem">
+        <div class="field"><label>Project ID</label><input id="projectId" /></div>
+        <div class="field"><label>App ID</label><input id="appId" /></div>
+      </div>
+      <div class="grid two" style="margin-top:.9rem">
+        <div class="field"><label>Admin password</label><input id="passwordSetting" placeholder="karaoke123" /></div>
+        <div class="field"><label>Playback mode</label><select id="playerMode"><option value="embed">Embed on display</option><option value="open">Open YouTube in new tab</option></select></div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="saveSettingsBtn">Save settings</button>
+        <button class="btn btn-secondary" id="connectBtn">Connect to Firebase</button>
+      </div>
+      <div class="hint">Display URL: add <strong>?display</strong> to this page URL. Guest URL: add <strong>?guest</strong>. Frontend Firebase config is public by design; protect the app with Firestore Security Rules instead [web:47][web:76].</div>
+    </section>
+  </main>
+
+  <section id="displayRoot" class="display-page hidden">
+    <div class="display-shell">
+      <div class="display-card">
+        <h2>Now singing</h2>
+        <div class="display-song" id="displaySong">No song selected yet</div>
+        <div class="display-meta" id="displayMeta">Pick a song from the admin queue.</div>
+        <iframe id="ytFrame" class="display-frame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      </div>
+      <div class="display-card">
+        <h2>Up next</h2>
+        <div class="display-next" id="displayNext"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const storageKey = 'karaoke_cfg_v3';
+    let cfg = {
+      apiKey: 'AIzaSyAlZn8z5-sIxw4betwOUtmvDIr6gNnJxB8',
+      authDomain: 'surhonaho.firebaseapp.com',
+      projectId: 'surhonaho',
+      appId: '1:411569119873:web:22398b4d8b896b1ee5e380',
+      password: 'karaoke123',
+      playerMode: 'embed'
+    };
+    let db = null, queue = [], current = null;
+
+    function toast(msg){ const t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(window.__tt); window.__tt=setTimeout(()=>t.style.display='none',2600); }
+    function ytId(url=''){ const m = url.match(/[?&]v=([^&]+)/)||url.match(/youtu\.be\/([^?&]+)/)||url.match(/embed\/([^?&]+)/); return m?m[1]:''; }
+    function esc(str=''){ return String(str).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    function baseUrl(){ return location.origin + location.pathname; }
+    function setLinks(){ const guest = baseUrl() + '?guest'; $('#guestLinkText').textContent = guest; }
+
+    function loadSettings(){
+      try{ const saved = JSON.parse(localStorage.getItem(storageKey)||'null'); if(saved) cfg = {...cfg, ...saved}; }catch{}
+      $('#apiKey').value = cfg.apiKey; $('#authDomain').value = cfg.authDomain; $('#projectId').value = cfg.projectId; $('#appId').value = cfg.appId; $('#passwordSetting').value = cfg.password; $('#playerMode').value = cfg.playerMode; setLinks();
+    }
+    function saveSettings(){
+      cfg.apiKey = $('#apiKey').value.trim(); cfg.authDomain = $('#authDomain').value.trim(); cfg.projectId = $('#projectId').value.trim(); cfg.appId = $('#appId').value.trim(); cfg.password = $('#passwordSetting').value || 'karaoke123'; cfg.playerMode = $('#playerMode').value;
+      localStorage.setItem(storageKey, JSON.stringify(cfg)); toast('Settings saved'); renderAll();
+    }
+
+    function initFirebase(){
+      if(!firebase.apps.length){ firebase.initializeApp({ apiKey: cfg.apiKey, authDomain: cfg.authDomain, projectId: cfg.projectId, appId: cfg.appId }); }
+      db = firebase.firestore();
+      db.collection('karaoke').doc('state').onSnapshot(snap => {
+        const d = snap.data() || {}; queue = (d.queue || []).sort((a,b)=>(a.order||0)-(b.order||0)); current = d.current || null; $('#syncBadge') && ($('#syncBadge').textContent = 'Live'); renderAll();
+      }, () => toast('Firebase connection failed'));
+      toast('Connected to Firebase');
+    }
+    function syncState(patch){ if(!db) return; return db.collection('karaoke').doc('state').set(patch,{merge:true}); }
+
+    function addRequest(){
+      const guestName=$('#guestName').value.trim(), songTitle=$('#songTitle').value.trim(), songArtist=$('#songArtist').value.trim(), youtubeLink=$('#youtubeLink').value.trim(), notes=$('#notes').value.trim();
+      if(!guestName || !songTitle || !songArtist){ toast('Name, song, and artist are required'); return; }
+      queue.push({ id: crypto.randomUUID(), guestName, songTitle, songArtist, youtubeLink, youtubeId: ytId(youtubeLink), notes, status:'queued', order: Date.now() });
+      syncState({ queue });
+      ['guestName','songTitle','songArtist','youtubeLink','notes'].forEach(id => $('#'+id).value='');
+      toast('Request added');
+    }
+    function reorder(id, dir){ const i=queue.findIndex(x=>x.id===id), j=i+dir; if(i<0||j<0||j>=queue.length) return; [queue[i],queue[j]]=[queue[j],queue[i]]; queue.forEach((q,idx)=>q.order=idx); syncState({ queue }); }
+    function removeReq(id){ queue = queue.filter(x=>x.id!==id); if(current && current.id===id) current=null; syncState({ queue, current }); }
+    function playReq(id){ const item = queue.find(x=>x.id===id); if(!item) return; current = {...item, status:'playing'}; queue = queue.filter(x=>x.id!==id); syncState({ queue, current }); if(item.youtubeId && cfg.playerMode==='open') window.open('https://www.youtube.com/watch?v='+item.youtubeId,'_blank'); }
+    function playNext(){ if(queue[0]) playReq(queue[0].id); }
+    function clearQueue(){ queue=[]; current=null; syncState({ queue, current }); }
+
+    function renderAll(){
+      $('#totalRequests') && ($('#totalRequests').textContent = String(queue.length));
+      $('#nowPlaying') && ($('#nowPlaying').textContent = current ? current.songTitle : '—');
+      $('#queueStatus') && ($('#queueStatus').textContent = queue.length ? 'Live' : 'Idle');
+      const list = $('#queueList');
+      if(list){ list.innerHTML = queue.map((q,i)=>`<div class="item"><div><h3>${i+1}. ${esc(q.songTitle)}</h3><p>${esc(q.songArtist)} • ${esc(q.guestName)}</p><div class="chips"><span class="chip">${esc(q.status||'queued')}</span>${q.youtubeId?'<span class="chip">YouTube linked</span>':''}</div></div><div class="item-actions"><button class="btn btn-secondary" data-act="play" data-id="${q.id}">Play</button><button class="btn btn-secondary" data-act="up" data-id="${q.id}">Up</button><button class="btn btn-secondary" data-act="down" data-id="${q.id}">Down</button><button class="btn btn-danger" data-act="del" data-id="${q.id}">Delete</button></div></div>`).join('') || '<div class="hint">No requests yet.</div>'; }
+      $('#displaySong') && ($('#displaySong').textContent = current ? current.songTitle + ' — ' + current.songArtist : 'No song selected yet');
+      $('#displayMeta') && ($('#displayMeta').textContent = current ? ('Singer: ' + current.guestName) : 'Pick a song from the admin queue.');
+      const next = $('#displayNext');
+      if(next){ next.innerHTML = (current ? queue.filter(q=>q.id!==current.id) : queue).slice(0,5).map(q=>`<div class="next-item"><strong>${esc(q.songTitle)}</strong><div class="display-meta">${esc(q.songArtist)} • ${esc(q.guestName)}</div></div>`).join('') || '<div class="display-meta">Nothing in the queue.</div>'; }
+      const frame = $('#ytFrame'); if(frame){ frame.src = current && current.youtubeId && cfg.playerMode==='embed' ? `https://www.youtube.com/embed/${current.youtubeId}?autoplay=1&rel=0` : ''; }
+    }
+
+    function setView(view){ $$('.tab').forEach(b=>b.classList.toggle('active', b.dataset.view===view)); ['requestView','adminView','settingsView'].forEach(id=>$('#'+id).classList.add('hidden')); $('#'+view+'View').classList.remove('hidden'); $('#modePill').textContent = view==='request' ? 'Guest mode' : view==='admin' ? 'Admin mode' : 'Settings mode'; }
+    function route(){ const p = new URLSearchParams(location.search); if(p.has('display')){ $('#appRoot').classList.add('hidden'); $('#displayRoot').classList.remove('hidden'); document.body.style.background = 'radial-gradient(circle at top,#0d1530 0,#040812 55%,#02040b 100%)'; } else if(p.has('guest')) { setView('request'); } }
+
+    $$('.tab').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+    $('#submitBtn').addEventListener('click', addRequest);
+    $('#copyGuestBtn').addEventListener('click', async ()=>{ await navigator.clipboard.writeText(baseUrl() + '?guest'); toast('Guest link copied'); });
+    $('#saveSettingsBtn').addEventListener('click', saveSettings);
+    $('#connectBtn').addEventListener('click', initFirebase);
+    $('#loginBtn').addEventListener('click', ()=>{ if(($('#adminPass').value||'')===cfg.password){ $('#adminLoginBox').classList.add('hidden'); $('#adminPanel').classList.remove('hidden'); toast('Admin unlocked'); } else toast('Wrong password'); });
+    $('#playNextBtn').addEventListener('click', playNext);
+    $('#openCurrentBtn').addEventListener('click', ()=>{ if(current && current.youtubeId) window.open('https://www.youtube.com/watch?v='+current.youtubeId,'_blank'); });
+    $('#clearBtn').addEventListener('click', clearQueue);
+    $('#queueList').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; const id=b.dataset.id, act=b.dataset.act; if(act==='play') playReq(id); if(act==='up') reorder(id,-1); if(act==='down') reorder(id,1); if(act==='del') removeReq(id); });
+
+    loadSettings(); renderAll(); route();
+  </script>
+</body>
+</html>
