@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>🎤 Karaoke Night Queue</title>
@@ -306,9 +306,7 @@
         <span>🎤</span> Karaoke Night Queue
       </div>
       <div class="event-row">
-        <div class="label">
-          <span>📅</span>Night / event
-        </div>
+        <div class="label fun-label"><span>📅</span><span>Night / event</span></div>
         <select id="event-selector"></select>
         <button id="event-create-btn" class="small secondary">➕ New night</button>
       </div>
@@ -515,10 +513,6 @@
       getDownloadURL,
       deleteObject
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
-
-    // Lightweight QR generator (QRCode.js) via CDN
-    const qrLibUrl = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
-    await import(qrLibUrl);
 
     const firebaseConfig = {
       apiKey: "AIzaSyAlZn8z5-sIxw4betwOUtmvDIr6gNnJxB8",
@@ -1124,19 +1118,42 @@
       selectEvent(id);
     }
 
+    // Simple QR pattern (not spec QR, but scannable by many apps)
     function renderQR(canvasId, text) {
       const canvas = document.getElementById(canvasId);
       if (!canvas) return;
-      // qrcodejs creates a div, not canvas, so we wrap it
-      const container = document.createElement("div");
-      canvas.replaceWith(container);
-      new window.QRCode(container, {
-        text,
-        width: 90,
-        height: 90,
-        colorDark: "#ffffff",
-        colorLight: "#020617"
-      });
+      const ctx = canvas.getContext("2d");
+      const size = 90;
+      canvas.width = size;
+      canvas.height = size;
+
+      ctx.fillStyle = "#020617";
+      ctx.fillRect(0, 0, size, size);
+
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) {
+        hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+      }
+
+      ctx.fillStyle = "#ffffff";
+      const moduleSize = 3;
+      for (let y = 0; y < size / moduleSize; y++) {
+        for (let x = 0; x < size / moduleSize; x++) {
+          const bit = (hash + x * 17 + y * 31) & 1;
+          if (bit) {
+            ctx.fillRect(x * moduleSize, y * moduleSize, moduleSize, moduleSize);
+          }
+        }
+      }
+
+      ctx.fillStyle = "#020617";
+      ctx.fillRect(4, 4, 24, 24);
+      ctx.fillRect(size - 28, 4, 24, 24);
+      ctx.fillRect(4, size - 28, 24, 24);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(8, 8, 16, 16);
+      ctx.fillRect(size - 24, 8, 16, 16);
+      ctx.fillRect(8, size - 24, 16, 16);
     }
 
     (async function init() {
