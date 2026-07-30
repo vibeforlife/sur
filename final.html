@@ -1,0 +1,1235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>🎤 Karaoke Night Queue</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 40%, #000000 100%);
+      color: #f9fafb;
+    }
+    header {
+      padding: 16px;
+      background: linear-gradient(to right, #111827, #1e293b);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 1px solid #1f2937;
+    }
+    main {
+      padding: 16px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .pill {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #1f2937;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .app-title {
+      margin-top: 6px;
+      font-weight: 700;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .app-title span {
+      font-size: 24px;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid #1f2937;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.6);
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .label {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    input, button, select {
+      font-family: inherit;
+      font-size: 14px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #f9fafb;
+      box-sizing: border-box;
+      margin-bottom: 8px;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #a855f7;
+      box-shadow: 0 0 0 1px #a855f7;
+    }
+    button {
+      border-radius: 999px;
+      padding: 8px 16px;
+      border: none;
+      background: linear-gradient(to right, #6366f1, #a855f7);
+      color: #f9fafb;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    }
+    button.secondary {
+      background: #111827;
+      border: 1px solid #374151;
+    }
+    button.danger {
+      background: #b91c1c;
+    }
+    button.small {
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .row > * {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    .queue-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #111827;
+    }
+    .queue-meta {
+      font-size: 13px;
+      color: #9ca3af;
+    }
+    .badge {
+      font-size: 11px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: #1e293b;
+      color: #e5e7eb;
+      margin-left: 8px;
+    }
+    .status {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+    .status strong {
+      color: #e5e7eb;
+    }
+    .now-card {
+      border-radius: 18px;
+      background: radial-gradient(circle at top left, #a855f7 0, #6366f1 40%, #0f172a 85%);
+      border: 1px solid rgba(251, 191, 36, 0.6);
+      box-shadow: 0 18px 50px rgba(107, 114, 128, 0.65);
+      padding: 18px;
+    }
+    .now-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .now-song {
+      font-size: 26px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+    .now-meta {
+      font-size: 16px;
+      color: #e5e7eb;
+      margin-top: 4px;
+    }
+    .now-link {
+      font-size: 13px;
+      margin-top: 8px;
+      word-break: break-all;
+    }
+    .now-pulse {
+      animation: pulseGlow 1.4s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.3); }
+      50% { box-shadow: 0 0 0 10px rgba(251, 191, 36, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0); }
+    }
+    .big-now-playing {
+      font-size: 36px;
+      margin: 24px 0 8px;
+      font-weight: 700;
+    }
+    .big-meta {
+      font-size: 20px;
+      color: #e5e7eb;
+      margin-bottom: 16px;
+    }
+    .big-queue-item {
+      font-size: 20px;
+      padding: 6px 0;
+    }
+    .error-banner {
+      background: #7f1d1d;
+      color: #fee2e2;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    .link-text {
+      font-size: 12px;
+      margin-top: 2px;
+      word-break: break-all;
+    }
+    .link-text a {
+      color: #a5b4fc;
+      text-decoration: underline;
+    }
+    .link-text a:hover {
+      color: #facc15;
+    }
+    .event-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .event-row select {
+      max-width: 260px;
+      margin-bottom: 0;
+    }
+    .event-info {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+    .photo-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .photo-item {
+      position: relative;
+    }
+    .photo-item img {
+      width: 90px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+    }
+    .photo-delete {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      border-radius: 999px;
+      padding: 2px 6px;
+      font-size: 11px;
+      background: #111827;
+      border: 1px solid #374151;
+      cursor: pointer;
+    }
+    .qr-wrapper {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    canvas.qr-canvas {
+      background: #020617;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+    }
+    .fun-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="pill" id="mode-pill">Mode</div>
+      <div class="app-title">
+        <span>🎤</span> Karaoke Night Queue
+      </div>
+      <div class="event-row">
+        <div class="label">
+          <span>📅</span>Night / event
+        </div>
+        <select id="event-selector"></select>
+        <button id="event-create-btn" class="small secondary">➕ New night</button>
+      </div>
+      <div id="event-meta" class="event-info"></div>
+    </div>
+    <div style="font-size: 13px; color: #9ca3af;" id="connection-status">
+      Connecting…
+    </div>
+  </header>
+
+  <main>
+    <div id="error-banner" class="error-banner" style="display:none;"></div>
+
+    <!-- Guest section -->
+    <section id="guest-section" style="display:none;">
+      <div class="card">
+        <h2><span>✨</span>Request a song</h2>
+        <div class="row">
+          <div>
+            <div class="label fun-label"><span>🎵</span><span>Song title</span></div>
+            <input id="guest-title" placeholder="e.g. Bohemian Rhapsody" />
+          </div>
+          <div>
+            <div class="label fun-label"><span>🎧</span><span>Artist</span></div>
+            <input id="guest-artist" placeholder="e.g. Queen" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label fun-label"><span>🎤</span><span>Your name</span></div>
+            <input id="guest-singer" placeholder="e.g. Alex" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label fun-label"><span>📺</span><span>YouTube link (optional)</span></div>
+            <input id="guest-youtube" placeholder="e.g. https://youtu.be/..." />
+          </div>
+        </div>
+        <button id="guest-submit-btn">
+          <span>➕</span> <span>Add to queue</span>
+        </button>
+        <div style="margin-top: 8px; font-size: 13px; color: #9ca3af;" id="guest-feedback"></div>
+      </div>
+
+      <div class="card now-card" id="guest-now-card">
+        <div class="now-title">
+          <span>🔊</span> NOW SINGING
+        </div>
+        <div class="now-song" id="guest-current-title">Idle</div>
+        <div class="now-meta" id="guest-current-meta"></div>
+        <div class="now-link link-text" id="guest-current-link"></div>
+      </div>
+
+      <div class="card">
+        <h2><span>📜</span>Queue</h2>
+        <div class="status" style="margin-bottom: 8px;">
+          <span>Total queued:</span>
+          <strong id="guest-total-queued">0</strong>
+        </div>
+        <ul id="guest-queue-list"></ul>
+      </div>
+
+      <div class="card">
+        <h2><span>🎉</span>Sung tonight</h2>
+        <ul id="guest-sung-list"></ul>
+      </div>
+
+      <div class="card">
+        <h2><span>📸</span>Photos from tonight</h2>
+        <div id="guest-photo-list" class="photo-grid"></div>
+      </div>
+    </section>
+
+    <!-- Admin section -->
+    <section id="admin-section" style="display:none;">
+      <div class="card">
+        <h2><span>🛠</span>Admin login</h2>
+        <p class="status">
+          Enter the admin password to control the queue.
+        </p>
+        <div class="row">
+          <input
+            id="admin-password-input"
+            type="password"
+            placeholder="Admin password"
+          />
+          <button id="admin-login-btn">
+            🔐 Unlock admin
+          </button>
+        </div>
+        <div id="admin-login-feedback" style="margin-top: 8px; font-size: 13px; color: #9ca3af;"></div>
+      </div>
+
+      <div id="admin-controls-wrapper" style="display:none;">
+        <div class="card">
+          <h2><span>🎛</span>Admin controls</h2>
+          <p class="status">
+            You are controlling the live queue for the selected night.
+          </p>
+          <div class="row">
+            <button id="admin-clear-current-btn" class="secondary">
+              ⏹ Clear current (mark as sung)
+            </button>
+          </div>
+          <div class="qr-wrapper">
+            <div>Guest link QR (final guest page):</div>
+            <canvas id="admin-qr" class="qr-canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="card now-card" id="admin-now-card">
+          <div class="now-title">
+            <span>🔊</span> NOW SINGING (admin)
+          </div>
+          <div class="now-song" id="admin-current-title">Idle</div>
+          <div class="now-meta" id="admin-current-meta"></div>
+          <div class="now-link link-text" id="admin-current-link"></div>
+          <div style="margin-top: 8px;">
+            <button class="small secondary" id="admin-edit-current-btn">✏ Edit</button>
+            <button class="small danger" id="admin-delete-current-btn">🗑 Delete</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2><span>📜</span>Queue (editable)</h2>
+          <div class="status" style="margin-bottom: 8px;">
+            <span>Total queued:</span>
+            <strong id="admin-total-queued">0</strong>
+          </div>
+          <ul id="admin-queue-list"></ul>
+        </div>
+
+        <div class="card">
+          <h2><span>🎉</span>Sung tonight (editable)</h2>
+          <ul id="admin-sung-list"></ul>
+        </div>
+
+        <div class="card">
+          <h2><span>📸</span>Event photos (max 5)</h2>
+          <input id="photo-input" type="file" multiple accept="image/*" />
+          <button id="photo-upload-btn" class="secondary small">Upload photos</button>
+          <div id="photo-feedback" class="status"></div>
+          <div id="photo-list" class="photo-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Display section -->
+    <section id="display-section" style="display:none;">
+      <div class="card">
+        <h2><span>🖥</span>Display</h2>
+        <p class="status">
+          Put this page on the projector or TV. It updates live as the admin changes songs.
+        </p>
+        <div class="qr-wrapper">
+          <div>Guests: scan to request songs</div>
+          <canvas id="display-qr" class="qr-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="card now-card now-pulse" id="display-now-card">
+        <div class="now-title">
+          <span>🔊</span> NOW SINGING
+        </div>
+        <div class="big-now-playing" id="display-current-title">Idle</div>
+        <div class="big-meta" id="display-current-meta"></div>
+        <div class="now-link link-text" id="display-current-link"></div>
+      </div>
+
+      <div class="card">
+        <h2><span>📜</span>Up next</h2>
+        <div id="display-queue-list"></div>
+      </div>
+
+      <div class="card">
+        <h2><span>🎉</span>Sung tonight</h2>
+        <div id="display-sung-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      getDoc,
+      setDoc,
+      addDoc,
+      updateDoc,
+      deleteDoc,
+      getDocs,
+      query,
+      where,
+      orderBy,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import {
+      getStorage,
+      ref as storageRef,
+      uploadBytes,
+      getDownloadURL,
+      deleteObject
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+
+    // Lightweight QR generator (QRCode.js) via CDN
+    const qrLibUrl = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+    await import(qrLibUrl);
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAlZn8z5-sIxw4betwOUtmvDIr6gNnJxB8",
+      authDomain: "surhonaho.firebaseapp.com",
+      projectId: "surhonaho",
+      storageBucket: "surhonaho.firebasestorage.app",
+      messagingSenderId: "411569119873",
+      appId: "1:411569119873:web:22398b4d8b896b1ee5e380"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    const ADMIN_PASSWORD = "1234";
+    const GUEST_URL = "https://vibeforlife.github.io/sur/final.html?guest";
+
+    let currentEventId = null;
+    let eventDocRef = null;
+    let songsColRef = null;
+    let photosColRef = null;
+    let songUnsub = null;
+    let photoUnsub = null;
+
+    function getMode() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("admin")) return "admin";
+      if (params.has("display")) return "display";
+      if (params.has("guest")) return "guest";
+      return "guest";
+    }
+
+    function setModeUI(mode) {
+      document.getElementById("guest-section").style.display =
+        mode === "guest" ? "block" : "none";
+      document.getElementById("admin-section").style.display =
+        mode === "admin" ? "block" : "none";
+      document.getElementById("display-section").style.display =
+        mode === "display" ? "block" : "none";
+
+      const pill = document.getElementById("mode-pill");
+      if (mode === "guest") pill.textContent = "Guest";
+      if (mode === "admin") pill.textContent = "Admin";
+      if (mode === "display") pill.textContent = "Display";
+    }
+
+    function setConnectionStatus(text) {
+      document.getElementById("connection-status").textContent = text;
+    }
+
+    function showError(message) {
+      const el = document.getElementById("error-banner");
+      el.textContent = message;
+      el.style.display = "block";
+    }
+
+    function clearError() {
+      const el = document.getElementById("error-banner");
+      el.style.display = "none";
+      el.textContent = "";
+    }
+
+    function setEventMeta(data) {
+      const el = document.getElementById("event-meta");
+      if (!data) {
+        el.textContent = "";
+        return;
+      }
+      const dateStr = data.date
+        ? new Date(data.date).toLocaleString()
+        : "";
+      const pastStr = data.isPast ? " (past night)" : "";
+      el.textContent = `${data.name || currentEventId}${pastStr}${
+        dateStr ? " — " + dateStr : ""
+      }`;
+    }
+
+    async function ensureEventExists(eventId) {
+      const ref = doc(db, "events", eventId);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          name: "Karaoke " + eventId,
+          date: Date.now(),
+          isPast: false
+        });
+      }
+      return ref;
+    }
+
+    function selectEvent(eventId) {
+      currentEventId = eventId;
+      eventDocRef = doc(db, "events", eventId);
+      songsColRef = collection(db, "events", eventId, "songs");
+      photosColRef = collection(db, "events", eventId, "photos");
+      document.getElementById("event-selector").value = eventId;
+
+      if (songUnsub) songUnsub();
+      if (photoUnsub) photoUnsub();
+
+      getDoc(eventDocRef)
+        .then((snap) => {
+          if (snap.exists()) setEventMeta(snap.data());
+        })
+        .catch((err) => {
+          console.error("event meta error", err.code, err.message);
+        });
+
+      const songsQuery = query(songsColRef, orderBy("order", "asc"));
+      songUnsub = onSnapshot(
+        songsQuery,
+        (snap) => {
+          clearError();
+          setConnectionStatus("Live");
+          const songs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          updateSongViews(songs);
+        },
+        (err) => {
+          console.error("songs onSnapshot error", err.code, err.message);
+          showError("Songs listener error: " + (err.code || "unknown"));
+          setConnectionStatus("Error");
+        }
+      );
+
+      photoUnsub = onSnapshot(
+        photosColRef,
+        (snap) => {
+          const photos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          updatePhotoViews(photos);
+        },
+        (err) => {
+          console.error("photos onSnapshot error", err.code, err.message);
+        }
+      );
+    }
+
+    async function loadEventsAndInitSelection() {
+      const selector = document.getElementById("event-selector");
+      selector.innerHTML = "";
+      const eventsCol = collection(db, "events");
+      const snap = await getDocs(eventsCol);
+
+      if (snap.empty) {
+        const id = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+        const ref = await ensureEventExists(id);
+        const data = (await getDoc(ref)).data();
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.textContent = data.name || id;
+        selector.appendChild(opt);
+        selectEvent(id);
+        return;
+      }
+
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        const opt = document.createElement("option");
+        opt.value = docSnap.id;
+        opt.textContent = data.name || docSnap.id;
+        selector.appendChild(opt);
+      });
+
+      const firstId = snap.docs[0].id;
+      selectEvent(firstId);
+    }
+
+    function splitSongsByStatus(songs) {
+      const current = songs.find((s) => s.status === "current") || null;
+      const queued = songs.filter((s) => s.status === "queued");
+      const sung = songs.filter((s) => s.status === "sung");
+      return { current, queued, sung };
+    }
+
+    function buildLinkHtml(url) {
+      return url && url.trim()
+        ? `<div class="link-text"><a href="${url.trim()}" target="_blank" rel="noopener noreferrer">${url.trim()}</a></div>`
+        : "";
+    }
+
+    function renderQueueList(ulEl, songs, editable, onEdit) {
+      ulEl.innerHTML = "";
+      songs.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "queue-item";
+
+        const left = document.createElement("div");
+        const linkHtml = buildLinkHtml(item.youtube || "");
+        left.innerHTML = `
+          <div>${index + 1}. ${item.title || "Untitled"}</div>
+          <div class="queue-meta">
+            ${item.artist || "Unknown"}<span class="badge">${item.singer || "?"}</span>
+          </div>
+          ${linkHtml}
+        `;
+        li.appendChild(left);
+
+        if (editable && onEdit) {
+          const controls = document.createElement("div");
+
+          const upBtn = document.createElement("button");
+          upBtn.className = "small secondary";
+          upBtn.textContent = "↑";
+          upBtn.onclick = () => onEdit("move-up", item.id);
+
+          const downBtn = document.createElement("button");
+          downBtn.className = "small secondary";
+          downBtn.textContent = "↓";
+          downBtn.onclick = () => onEdit("move-down", item.id);
+
+          const playBtn = document.createElement("button");
+          playBtn.className = "small";
+          playBtn.textContent = "▶";
+          playBtn.onclick = () => onEdit("play", item.id);
+
+          const editBtn = document.createElement("button");
+          editBtn.className = "small secondary";
+          editBtn.textContent = "✏";
+          editBtn.onclick = () => onEdit("edit", item.id);
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "small danger";
+          deleteBtn.textContent = "🗑";
+          deleteBtn.onclick = () => onEdit("delete", item.id);
+
+          controls.appendChild(upBtn);
+          controls.appendChild(downBtn);
+          controls.appendChild(playBtn);
+          controls.appendChild(editBtn);
+          controls.appendChild(deleteBtn);
+
+          li.appendChild(controls);
+        }
+
+        ulEl.appendChild(li);
+      });
+    }
+
+    function renderSimpleList(ulEl, songs, editable, onEdit) {
+      ulEl.innerHTML = "";
+      songs.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "queue-item";
+        const left = document.createElement("div");
+        const linkHtml = buildLinkHtml(item.youtube || "");
+        left.innerHTML = `
+          <div>${index + 1}. ${item.title || "Untitled"}</div>
+          <div class="queue-meta">
+            ${item.artist || "Unknown"}<span class="badge">${item.singer || "?"}</span>
+          </div>
+          ${linkHtml}
+        `;
+        li.appendChild(left);
+
+        if (editable && onEdit) {
+          const controls = document.createElement("div");
+          const editBtn = document.createElement("button");
+          editBtn.className = "small secondary";
+          editBtn.textContent = "✏";
+          editBtn.onclick = () => onEdit("edit", item.id);
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "small danger";
+          deleteBtn.textContent = "🗑";
+          deleteBtn.onclick = () => onEdit("delete", item.id);
+
+          controls.appendChild(editBtn);
+          controls.appendChild(deleteBtn);
+          li.appendChild(controls);
+        }
+
+        ulEl.appendChild(li);
+      });
+    }
+
+    function updateSongViews(songs) {
+      const { current, queued, sung } = splitSongsByStatus(songs);
+
+      // Guest
+      const guestNowCard = document.getElementById("guest-now-card");
+      const guestCurrentTitle = document.getElementById("guest-current-title");
+      const guestCurrentMeta = document.getElementById("guest-current-meta");
+      const guestCurrentLink = document.getElementById("guest-current-link");
+      if (current) {
+        guestNowCard.classList.add("now-pulse");
+        guestCurrentTitle.textContent = current.title || "Untitled";
+        guestCurrentMeta.textContent =
+          (current.artist || "Unknown") + " — " + (current.singer || "?");
+        guestCurrentLink.innerHTML = buildLinkHtml(current.youtube || "");
+      } else {
+        guestNowCard.classList.remove("now-pulse");
+        guestCurrentTitle.textContent = "Idle";
+        guestCurrentMeta.textContent = "";
+        guestCurrentLink.innerHTML = "";
+      }
+      document.getElementById("guest-total-queued").textContent = String(
+        queued.length
+      );
+      renderQueueList(
+        document.getElementById("guest-queue-list"),
+        queued,
+        false,
+        null
+      );
+      renderSimpleList(
+        document.getElementById("guest-sung-list"),
+        sung,
+        false,
+        null
+      );
+
+      // Admin
+      const adminNowCard = document.getElementById("admin-now-card");
+      const adminCurrentTitle = document.getElementById("admin-current-title");
+      const adminCurrentMeta = document.getElementById("admin-current-meta");
+      const adminCurrentLink = document.getElementById("admin-current-link");
+      const adminEditCurrentBtn = document.getElementById("admin-edit-current-btn");
+      const adminDeleteCurrentBtn = document.getElementById("admin-delete-current-btn");
+
+      if (current) {
+        adminNowCard.classList.add("now-pulse");
+        adminCurrentTitle.textContent = current.title || "Untitled";
+        adminCurrentMeta.textContent =
+          (current.artist || "Unknown") + " — " + (current.singer || "?");
+        adminCurrentLink.innerHTML = buildLinkHtml(current.youtube || "");
+        adminEditCurrentBtn.onclick = () => handleAdminSongAction("edit", current.id);
+        adminDeleteCurrentBtn.onclick = () => handleAdminSongAction("delete", current.id);
+      } else {
+        adminNowCard.classList.remove("now-pulse");
+        adminCurrentTitle.textContent = "Idle";
+        adminCurrentMeta.textContent = "";
+        adminCurrentLink.innerHTML = "";
+        adminEditCurrentBtn.onclick = null;
+        adminDeleteCurrentBtn.onclick = null;
+      }
+
+      document.getElementById("admin-total-queued").textContent = String(
+        queued.length
+      );
+      renderQueueList(
+        document.getElementById("admin-queue-list"),
+        queued,
+        true,
+        handleAdminSongAction
+      );
+      renderSimpleList(
+        document.getElementById("admin-sung-list"),
+        sung,
+        true,
+        handleAdminSongAction
+      );
+
+      // Display
+      const displayCurrentTitle = document.getElementById("display-current-title");
+      const displayCurrentMeta = document.getElementById("display-current-meta");
+      const displayCurrentLink = document.getElementById("display-current-link");
+      if (current) {
+        displayCurrentTitle.textContent = current.title || "Untitled";
+        displayCurrentMeta.textContent =
+          (current.artist || "Unknown") + " — " + (current.singer || "?");
+        displayCurrentLink.innerHTML = buildLinkHtml(current.youtube || "");
+      } else {
+        displayCurrentTitle.textContent = "Idle";
+        displayCurrentMeta.textContent = "";
+        displayCurrentLink.innerHTML = "";
+      }
+      const displayQueue = document.getElementById("display-queue-list");
+      displayQueue.innerHTML = "";
+      queued.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "big-queue-item";
+        const linkText = item.youtube && item.youtube.trim()
+          ? ` • ${item.youtube.trim()}`
+          : "";
+        div.textContent = `${index + 1}. ${
+          item.title || "Untitled"
+        } — ${item.singer || "?"}${linkText}`;
+        displayQueue.appendChild(div);
+      });
+      const displaySung = document.getElementById("display-sung-list");
+      displaySung.innerHTML = "";
+      sung.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "big-queue-item";
+        const linkText = item.youtube && item.youtube.trim()
+          ? ` • ${item.youtube.trim()}`
+          : "";
+        div.textContent = `${index + 1}. ${
+          item.title || "Untitled"
+        } — ${item.singer || "?"}${linkText}`;
+        displaySung.appendChild(div);
+      });
+    }
+
+    function updatePhotoViews(photos) {
+      // Admin
+      const adminContainer = document.getElementById("photo-list");
+      adminContainer.innerHTML = "";
+      photos.forEach((p) => {
+        if (!p.downloadUrl) return;
+        const item = document.createElement("div");
+        item.className = "photo-item";
+        const img = document.createElement("img");
+        img.src = p.downloadUrl;
+        const delBtn = document.createElement("button");
+        delBtn.className = "photo-delete";
+        delBtn.textContent = "✕";
+        delBtn.onclick = () => deletePhoto(p.id, p.storagePath);
+
+        item.appendChild(img);
+        item.appendChild(delBtn);
+        adminContainer.appendChild(item);
+      });
+      document.getElementById("photo-feedback").textContent =
+        photos.length + " photo(s) uploaded for this night.";
+
+      // Guest
+      const guestContainer = document.getElementById("guest-photo-list");
+      guestContainer.innerHTML = "";
+      photos.forEach((p) => {
+        if (!p.downloadUrl) return;
+        const item = document.createElement("div");
+        item.className = "photo-item";
+        const img = document.createElement("img");
+        img.src = p.downloadUrl;
+        item.appendChild(img);
+        guestContainer.appendChild(item);
+      });
+    }
+
+    async function addGuestSong({ title, artist, singer, youtube }) {
+      if (!currentEventId) throw new Error("No event selected.");
+      if (!title || !singer) {
+        throw new Error("Song title and your name are required.");
+      }
+      const now = Date.now();
+      const payload = {
+        title: title.trim(),
+        artist: (artist || "").trim(),
+        singer: singer.trim(),
+        youtube: (youtube || "").trim(),
+        status: "queued",
+        createdAt: now,
+        order: now
+      };
+      await addDoc(songsColRef, payload);
+    }
+
+    async function setCurrentSong(songId) {
+      if (!songsColRef) return;
+      const qCurrent = query(songsColRef, where("status", "==", "current"));
+      const currentSnap = await getDocs(qCurrent);
+      const batchUpdates = [];
+      currentSnap.forEach((docSnap) => {
+        batchUpdates.push(updateDoc(docSnap.ref, { status: "sung" }));
+      });
+      await Promise.all(batchUpdates);
+      const newCurrentRef = doc(songsColRef, songId);
+      await updateDoc(newCurrentRef, { status: "current" });
+    }
+
+    async function clearCurrentSong() {
+      if (!songsColRef) return;
+      const qCurrent = query(songsColRef, where("status", "==", "current"));
+      const currentSnap = await getDocs(qCurrent);
+      const updates = [];
+      currentSnap.forEach((docSnap) => {
+        updates.push(updateDoc(docSnap.ref, { status: "sung" }));
+      });
+      await Promise.all(updates);
+    }
+
+    async function moveSong(songId, direction) {
+      const snap = await getDocs(query(songsColRef, orderBy("order", "asc")));
+      const songs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const index = songs.findIndex((s) => s.id === songId);
+      if (index === -1) return;
+      let swapIndex = direction === "up" ? index - 1 : index + 1;
+      if (swapIndex < 0 || swapIndex >= songs.length) return;
+      const songA = songs[index];
+      const songB = songs[swapIndex];
+      const refA = doc(songsColRef, songA.id);
+      const refB = doc(songsColRef, songB.id);
+      await Promise.all([
+        updateDoc(refA, { order: songB.order }),
+        updateDoc(refB, { order: songA.order })
+      ]);
+    }
+
+    async function editSong(songId) {
+      const snap = await getDoc(doc(songsColRef, songId));
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const newTitle = prompt("New title:", data.title || "");
+      if (newTitle === null) return;
+      const newArtist = prompt("New artist:", data.artist || "");
+      if (newArtist === null) return;
+      const newSinger = prompt("New singer:", data.singer || "");
+      if (newSinger === null) return;
+      const newYoutube = prompt("New YouTube link:", data.youtube || "");
+      await updateDoc(doc(songsColRef, songId), {
+        title: newTitle.trim(),
+        artist: newArtist.trim(),
+        singer: newSinger.trim(),
+        youtube: newYoutube.trim()
+      });
+    }
+
+    async function deleteSong(songId) {
+      if (!confirm("Delete this song from the night?")) return;
+      await deleteDoc(doc(songsColRef, songId));
+    }
+
+    function handleAdminSongAction(action, songId) {
+      if (action === "move-up") {
+        moveSong(songId, "up").catch((err) =>
+          console.error("moveSong up error", err.code, err.message)
+        );
+      }
+      if (action === "move-down") {
+        moveSong(songId, "down").catch((err) =>
+          console.error("moveSong down error", err.code, err.message)
+        );
+      }
+      if (action === "play") {
+        setCurrentSong(songId).catch((err) =>
+          console.error("setCurrentSong error", err.code, err.message)
+        );
+      }
+      if (action === "edit") {
+        editSong(songId).catch((err) =>
+          console.error("editSong error", err.code, err.message)
+        );
+      }
+      if (action === "delete") {
+        deleteSong(songId).catch((err) =>
+          console.error("deleteSong error", err.code, err.message)
+        );
+      }
+    }
+
+    async function uploadPhotos(files) {
+      if (!currentEventId) throw new Error("No event selected.");
+      const existing = await getDocs(photosColRef);
+      if (existing.size >= 5) {
+        throw new Error("This event already has 5 photos.");
+      }
+      const remaining = 5 - existing.size;
+      const toUpload = Array.from(files).slice(0, remaining);
+      if (!toUpload.length) {
+        throw new Error("No photos to upload or limit reached.");
+      }
+      for (const file of toUpload) {
+        const path = `events/${currentEventId}/photos/${Date.now()}_${file.name}`;
+        const sRef = storageRef(storage, path);
+        const snap = await uploadBytes(sRef, file);
+        const url = await getDownloadURL(snap.ref);
+        await addDoc(photosColRef, {
+          downloadUrl: url,
+          storagePath: path,
+          createdAt: Date.now()
+        });
+      }
+    }
+
+    async function deletePhoto(photoId, storagePath) {
+      if (!confirm("Delete this photo?")) return;
+      await deleteDoc(doc(photosColRef, photoId));
+      if (storagePath) {
+        const sRef = storageRef(storage, storagePath);
+        await deleteObject(sRef);
+      }
+    }
+
+    function setupAdminLogin() {
+      const input = document.getElementById("admin-password-input");
+      const btn = document.getElementById("admin-login-btn");
+      const feedback = document.getElementById("admin-login-feedback");
+      const wrapper = document.getElementById("admin-controls-wrapper");
+
+      btn.onclick = () => {
+        const value = input.value.trim();
+        if (value === ADMIN_PASSWORD) {
+          feedback.textContent = "Admin unlocked.";
+          wrapper.style.display = "block";
+        } else {
+          feedback.textContent = "Incorrect password.";
+          wrapper.style.display = "none";
+        }
+      };
+    }
+
+    async function createNewEvent() {
+      const name = prompt("Night name (e.g. Saturday Karaoke):", "");
+      if (name === null || !name.trim()) return;
+      const id = Date.now().toString();
+      const ref = doc(db, "events", id);
+      await setDoc(ref, {
+        name: name.trim(),
+        date: Date.now(),
+        isPast: false
+      });
+      await loadEventsAndInitSelection();
+      selectEvent(id);
+    }
+
+    function renderQR(canvasId, text) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      // qrcodejs creates a div, not canvas, so we wrap it
+      const container = document.createElement("div");
+      canvas.replaceWith(container);
+      new window.QRCode(container, {
+        text,
+        width: 90,
+        height: 90,
+        colorDark: "#ffffff",
+        colorLight: "#020617"
+      });
+    }
+
+    (async function init() {
+      const mode = getMode();
+      setModeUI(mode);
+      setConnectionStatus("Connecting…");
+
+      const selector = document.getElementById("event-selector");
+      const createBtn = document.getElementById("event-create-btn");
+
+      try {
+        await loadEventsAndInitSelection();
+        setConnectionStatus("Live");
+      } catch (err) {
+        console.error("loadEvents error", err.code, err.message);
+        showError("Failed to load events: " + (err.message || "unknown"));
+        setConnectionStatus("Error");
+      }
+
+      selector.onchange = () => {
+        const eventId = selector.value;
+        if (eventId) selectEvent(eventId);
+      };
+
+      createBtn.onclick = () => {
+        createNewEvent().catch((err) => {
+          console.error("createNewEvent error", err.code, err.message);
+          showError("Failed to create new night.");
+        });
+      };
+
+      if (mode === "guest") {
+        const submitBtn = document.getElementById("guest-submit-btn");
+        submitBtn.onclick = async () => {
+          const title = document.getElementById("guest-title").value;
+          const artist = document.getElementById("guest-artist").value;
+          const singer = document.getElementById("guest-singer").value;
+          const youtube = document.getElementById("guest-youtube").value;
+          const feedback = document.getElementById("guest-feedback");
+
+          feedback.textContent = "";
+          submitBtn.disabled = true;
+          try {
+            await addGuestSong({ title, artist, singer, youtube });
+            feedback.textContent = "Added!";
+            document.getElementById("guest-title").value = "";
+            document.getElementById("guest-artist").value = "";
+            document.getElementById("guest-singer").value = "";
+            document.getElementById("guest-youtube").value = "";
+          } catch (err) {
+            console.error("guest submit error", err.code, err.message);
+            feedback.textContent =
+              err.code === "permission-denied"
+                ? "Not allowed to add songs. Check Firestore rules."
+                : err.message || "Error adding song.";
+          } finally {
+            submitBtn.disabled = false;
+          }
+        };
+      }
+
+      if (mode === "admin") {
+        setupAdminLogin();
+
+        document.getElementById("admin-clear-current-btn").onclick = () => {
+          clearCurrentSong().catch((err) => {
+            console.error("clearCurrentSong error", err.code, err.message);
+            showError("Failed to clear current song.");
+          });
+        };
+
+        const photoInput = document.getElementById("photo-input");
+        const photoBtn = document.getElementById("photo-upload-btn");
+        const photoFeedback = document.getElementById("photo-feedback");
+        photoBtn.onclick = async () => {
+          photoFeedback.textContent = "";
+          try {
+            await uploadPhotos(photoInput.files);
+            photoFeedback.textContent = "Photos uploaded.";
+          } catch (err) {
+            console.error("uploadPhotos error", err.code, err.message);
+            photoFeedback.textContent =
+              err.message || "Failed to upload photos.";
+          }
+        };
+
+        renderQR("admin-qr", GUEST_URL);
+      }
+
+      if (mode === "display") {
+        renderQR("display-qr", GUEST_URL);
+      }
+    })();
+  </script>
+</body>
+</html>
