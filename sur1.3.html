@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>🎤 Karaoke Night Queue</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #050816;
+      color: #f9fafb;
+    }
+    header {
+      padding: 16px;
+      background: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1f2937;
+    }
+    main {
+      padding: 16px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .pill {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #1f2937;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .card {
+      background: #0b1120;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid #1f2937;
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+    .label {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+    input, button {
+      font-family: inherit;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #f9fafb;
+      box-sizing: border-box;
+      margin-bottom: 8px;
+    }
+    input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 1px #6366f1;
+    }
+    button {
+      border-radius: 999px;
+      padding: 8px 16px;
+      border: none;
+      background: #6366f1;
+      color: #f9fafb;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button.secondary {
+      background: #111827;
+      border: 1px solid #374151;
+    }
+    button.danger {
+      background: #b91c1c;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .row > * {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    .queue-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #111827;
+    }
+    .queue-meta {
+      font-size: 13px;
+      color: #9ca3af;
+    }
+    .badge {
+      font-size: 11px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: #1e293b;
+      color: #e5e7eb;
+      margin-left: 8px;
+    }
+    .status {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+    .status strong {
+      color: #e5e7eb;
+    }
+    .big-now-playing {
+      font-size: 32px;
+      margin: 24px 0 8px;
+    }
+    .big-meta {
+      font-size: 18px;
+      color: #9ca3af;
+      margin-bottom: 24px;
+    }
+    .big-queue-item {
+      font-size: 20px;
+      padding: 6px 0;
+    }
+    .error-banner {
+      background: #7f1d1d;
+      color: #fee2e2;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    code {
+      background: #020617;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 12px;
+      border: 1px solid #1f2937;
+    }
+    .admin-login-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      align-items: center;
+    }
+    .admin-login-row input {
+      max-width: 200px;
+      margin-bottom: 0;
+    }
+    .admin-login-row button {
+      white-space: nowrap;
+    }
+    .link-text {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 2px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="pill" id="mode-pill">Mode</div>
+      <div style="margin-top: 6px; font-weight: 600;">Karaoke Night Queue</div>
+    </div>
+    <div style="font-size: 13px; color: #9ca3af;" id="connection-status">
+      Connecting…
+    </div>
+  </header>
+
+  <main>
+    <div id="error-banner" class="error-banner" style="display:none;"></div>
+
+    <!-- Guest section -->
+    <section id="guest-section" style="display:none;">
+      <div class="card">
+        <h2>Request a song</h2>
+        <p class="status">
+          Share this page with friends. They submit from their phones; you control playback from the admin page.
+        </p>
+        <div class="row">
+          <div>
+            <div class="label">Song title</div>
+            <input id="guest-title" placeholder="e.g. Bohemian Rhapsody" />
+          </div>
+          <div>
+            <div class="label">Artist</div>
+            <input id="guest-artist" placeholder="e.g. Queen" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">Your name</div>
+            <input id="guest-singer" placeholder="e.g. Alex" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">YouTube link (optional)</div>
+            <input id="guest-youtube" placeholder="e.g. https://youtu.be/..." />
+          </div>
+        </div>
+        <button id="guest-submit-btn">
+          ➕ Add to queue
+        </button>
+        <div style="margin-top: 8px; font-size: 13px; color: #9ca3af;" id="guest-feedback"></div>
+      </div>
+
+      <div class="card">
+        <h2>Now singing</h2>
+        <div class="status">
+          <strong id="guest-current-title">Idle</strong><br />
+          <span id="guest-current-meta" class="queue-meta"></span>
+          <div id="guest-current-link" class="link-text"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Queue</h2>
+        <div class="status" style="margin-bottom: 8px;">
+          <span>Total requests:</span>
+          <strong id="guest-total-requests">0</strong>
+        </div>
+        <ul id="guest-queue-list"></ul>
+      </div>
+    </section>
+
+    <!-- Admin section -->
+    <section id="admin-section" style="display:none;">
+      <div class="card">
+        <h2>Admin login</h2>
+        <p class="status">
+          Enter the admin password to control the queue.
+        </p>
+        <div class="admin-login-row">
+          <input
+            id="admin-password-input"
+            type="password"
+            placeholder="Admin password"
+          />
+          <button id="admin-login-btn">
+            🔐 Unlock admin
+          </button>
+        </div>
+        <div id="admin-login-feedback" style="margin-top: 8px; font-size: 13px; color: #9ca3af;"></div>
+      </div>
+
+      <div id="admin-controls-wrapper" style="display:none;">
+        <div class="card">
+          <h2>Admin controls</h2>
+          <p class="status">
+            You are controlling the live queue. Use <code>?display</code> on the big screen for fullscreen view.
+          </p>
+          <div class="row">
+            <button id="admin-clear-current-btn" class="secondary">
+              ⏹ Clear current
+            </button>
+            <button id="admin-reset-btn" class="danger">
+              🔄 Reset queue doc
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Now singing</h2>
+          <div class="status">
+            <strong id="admin-current-title">Idle</strong><br />
+            <span id="admin-current-meta" class="queue-meta"></span>
+            <div id="admin-current-link" class="link-text"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Queue</h2>
+          <div class="status" style="margin-bottom: 8px;">
+            <span>Total requests:</span>
+            <strong id="admin-total-requests">0</strong>
+          </div>
+          <ul id="admin-queue-list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Display section -->
+    <section id="display-section" style="display:none;">
+      <div class="card">
+        <h2>Display</h2>
+        <p class="status">
+          Put this page on the projector or TV. It updates live as the admin changes songs.
+        </p>
+      </div>
+
+      <div>
+        <div class="big-now-playing" id="display-current-title">Idle</div>
+        <div class="big-meta" id="display-current-meta"></div>
+        <div id="display-current-link" class="link-text"></div>
+        <div class="status" style="margin-bottom: 8px;">
+          <span>Up next:</span>
+        </div>
+        <div id="display-queue-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      onSnapshot,
+      arrayUnion
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    // Correct Firebase config from your project
+    const firebaseConfig = {
+      apiKey: "AIzaSyAlZn8z5-sIxw4betwOUtmvDIr6gNnJxB8",
+      authDomain: "surhonaho.firebaseapp.com",
+      projectId: "surhonaho",
+      storageBucket: "surhonaho.firebasestorage.app",
+      messagingSenderId: "411569119873",
+      appId: "1:411569119873:web:22398b4d8b896b1ee5e380"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const stateRef = doc(db, "karaoke", "state");
+
+    const ADMIN_PASSWORD = "1234";
+
+    function getMode() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("admin")) return "admin";
+      if (params.has("display")) return "display";
+      if (params.has("guest")) return "guest";
+      return "guest";
+    }
+
+    function setModeUI(mode) {
+      document.getElementById("guest-section").style.display =
+        mode === "guest" ? "block" : "none";
+      document.getElementById("admin-section").style.display =
+        mode === "admin" ? "block" : "none";
+      document.getElementById("display-section").style.display =
+        mode === "display" ? "block" : "none";
+
+      const pill = document.getElementById("mode-pill");
+      if (mode === "guest") pill.textContent = "Guest";
+      if (mode === "admin") pill.textContent = "Admin";
+      if (mode === "display") pill.textContent = "Display";
+    }
+
+    function setConnectionStatus(text) {
+      document.getElementById("connection-status").textContent = text;
+    }
+
+    function showError(message) {
+      const el = document.getElementById("error-banner");
+      el.textContent = message;
+      el.style.display = "block";
+    }
+
+    function clearError() {
+      const el = document.getElementById("error-banner");
+      el.style.display = "none";
+      el.textContent = "";
+    }
+
+    async function ensureStateDoc() {
+      try {
+        const snap = await getDoc(stateRef);
+        if (!snap.exists()) {
+          await setDoc(stateRef, { current: null, queue: [] });
+        }
+      } catch (err) {
+        console.error("ensureStateDoc error", err.code, err.message);
+        showError(`Failed to get document (${err.code || "unknown"}).`);
+        setConnectionStatus("Error");
+        throw err;
+      }
+    }
+
+    // Rendering helpers
+    function renderQueueList(ulEl, queue) {
+      ulEl.innerHTML = "";
+      (queue || []).forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "queue-item";
+        const left = document.createElement("div");
+        const link = item.youtube && item.youtube.trim()
+          ? `<div class="link-text">${item.youtube.trim()}</div>`
+          : "";
+        left.innerHTML = `
+          <div>${index + 1}. ${item.title || "Untitled"}</div>
+          <div class="queue-meta">
+            ${item.artist || "Unknown"}<span class="badge">${item.singer || "?"}</span>
+          </div>
+          ${link}
+        `;
+        li.appendChild(left);
+        ulEl.appendChild(li);
+      });
+    }
+
+    function renderAdminQueueList(queue, onPlay) {
+      const ulEl = document.getElementById("admin-queue-list");
+      ulEl.innerHTML = "";
+      (queue || []).forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "queue-item";
+        const left = document.createElement("div");
+        const link = item.youtube && item.youtube.trim()
+          ? `<div class="link-text">${item.youtube.trim()}</div>`
+          : "";
+        left.innerHTML = `
+          <div>${index + 1}. ${item.title || "Untitled"}</div>
+          <div class="queue-meta">
+            ${item.artist || "Unknown"}<span class="badge">${item.singer || "?"}</span>
+          </div>
+          ${link}
+        `;
+        const btn = document.createElement("button");
+        btn.textContent = "▶ Play";
+        btn.onclick = () => onPlay(index);
+        li.appendChild(left);
+        li.appendChild(btn);
+        ulEl.appendChild(li);
+      });
+    }
+
+    function renderGuestState(data) {
+      const current = data.current;
+      const queue = data.queue || [];
+
+      document.getElementById("guest-total-requests").textContent = String(queue.length);
+      const curTitleEl = document.getElementById("guest-current-title");
+      const curMetaEl = document.getElementById("guest-current-meta");
+      const curLinkEl = document.getElementById("guest-current-link");
+
+      if (current) {
+        curTitleEl.textContent = current.title || "Untitled";
+        curMetaEl.textContent = `${current.artist || "Unknown"} — ${current.singer || "?"}`;
+        curLinkEl.textContent = current.youtube ? current.youtube : "";
+      } else {
+        curTitleEl.textContent = "Idle";
+        curMetaEl.textContent = "";
+        curLinkEl.textContent = "";
+      }
+
+      renderQueueList(document.getElementById("guest-queue-list"), queue);
+    }
+
+    function renderAdminState(data, onPlay) {
+      const current = data.current;
+      const queue = data.queue || [];
+
+      document.getElementById("admin-total-requests").textContent = String(queue.length);
+      const curTitleEl = document.getElementById("admin-current-title");
+      const curMetaEl = document.getElementById("admin-current-meta");
+      const curLinkEl = document.getElementById("admin-current-link");
+
+      if (current) {
+        curTitleEl.textContent = current.title || "Untitled";
+        curMetaEl.textContent = `${current.artist || "Unknown"} — ${current.singer || "?"}`;
+        curLinkEl.textContent = current.youtube ? current.youtube : "";
+      } else {
+        curTitleEl.textContent = "Idle";
+        curMetaEl.textContent = "";
+        curLinkEl.textContent = "";
+      }
+
+      renderAdminQueueList(queue, onPlay);
+    }
+
+    function renderDisplayState(data) {
+      const current = data.current;
+      const queue = data.queue || [];
+
+      const curTitleEl = document.getElementById("display-current-title");
+      const curMetaEl = document.getElementById("display-current-meta");
+      const curLinkEl = document.getElementById("display-current-link");
+      const listEl = document.getElementById("display-queue-list");
+
+      if (current) {
+        curTitleEl.textContent = current.title || "Untitled";
+        curMetaEl.textContent = `${current.artist || "Unknown"} — ${current.singer || "?"}`;
+        curLinkEl.textContent = current.youtube ? current.youtube : "";
+      } else {
+        curTitleEl.textContent = "Idle";
+        curMetaEl.textContent = "";
+        curLinkEl.textContent = "";
+      }
+
+      listEl.innerHTML = "";
+      queue.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "big-queue-item";
+        const link = item.youtube && item.youtube.trim()
+          ? ` • ${item.youtube.trim()}`
+          : "";
+        div.textContent = `${index + 1}. ${item.title || "Untitled"} — ${item.singer || "?"}${link}`;
+        listEl.appendChild(div);
+      });
+    }
+
+    // Firestore write helpers
+    async function addGuestRequest({ title, artist, singer, youtube }) {
+      if (!title || !singer) {
+        throw new Error("Song title and your name are required.");
+      }
+      const payload = {
+        title: title.trim(),
+        artist: (artist || "").trim(),
+        singer: singer.trim(),
+        youtube: (youtube || "").trim(),
+        createdAt: Date.now()
+      };
+      await ensureStateDoc();
+      try {
+        await updateDoc(stateRef, { queue: arrayUnion(payload) });
+      } catch (err) {
+        console.error("addGuestRequest updateDoc error", err.code, err.message);
+        throw err;
+      }
+    }
+
+    async function playFromQueueIndex(index) {
+      const snap = await getDoc(stateRef);
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const queue = data.queue || [];
+      if (index < 0 || index >= queue.length) return;
+      const current = queue[index];
+      const newQueue = queue.filter((_, i) => i !== index);
+      await updateDoc(stateRef, { current, queue: newQueue });
+    }
+
+    async function clearCurrentSong() {
+      await updateDoc(stateRef, { current: null });
+    }
+
+    async function resetQueueDoc() {
+      await setDoc(stateRef, { current: null, queue: [] });
+    }
+
+    function startStateListener(onData) {
+      return onSnapshot(
+        stateRef,
+        (snap) => {
+          clearError();
+          setConnectionStatus("Live");
+          if (!snap.exists()) {
+            onData({ current: null, queue: [] });
+          } else {
+            onData(snap.data());
+          }
+        },
+        (err) => {
+          console.error("onSnapshot error", err.code, err.message);
+          showError("Firestore error: " + (err.code || "unknown"));
+          setConnectionStatus("Error");
+        }
+      );
+    }
+
+    function setupAdminLogin() {
+      const input = document.getElementById("admin-password-input");
+      const btn = document.getElementById("admin-login-btn");
+      const feedback = document.getElementById("admin-login-feedback");
+      const wrapper = document.getElementById("admin-controls-wrapper");
+
+      btn.onclick = () => {
+        const value = input.value.trim();
+        if (value === ADMIN_PASSWORD) {
+          feedback.textContent = "Admin unlocked.";
+          wrapper.style.display = "block";
+        } else {
+          feedback.textContent = "Incorrect password.";
+          wrapper.style.display = "none";
+        }
+      };
+    }
+
+    (function init() {
+      const mode = getMode();
+      setModeUI(mode);
+      setConnectionStatus("Connecting…");
+
+      if (mode === "guest") {
+        ensureStateDoc()
+          .then(() => {
+            startStateListener(renderGuestState);
+          })
+          .catch(() => {
+            // ensureStateDoc error already logged
+          });
+
+        const submitBtn = document.getElementById("guest-submit-btn");
+        submitBtn.onclick = async () => {
+          const title = document.getElementById("guest-title").value;
+          const artist = document.getElementById("guest-artist").value;
+          const singer = document.getElementById("guest-singer").value;
+          const youtube = document.getElementById("guest-youtube").value;
+          const feedback = document.getElementById("guest-feedback");
+
+          feedback.textContent = "";
+          submitBtn.disabled = true;
+          try {
+            await addGuestRequest({ title, artist, singer, youtube });
+            feedback.textContent = "Added!";
+            document.getElementById("guest-title").value = "";
+            document.getElementById("guest-artist").value = "";
+            document.getElementById("guest-singer").value = "";
+            document.getElementById("guest-youtube").value = "";
+          } catch (err) {
+            console.error("guest submit error", err.code, err.message);
+            feedback.textContent =
+              err.code === "permission-denied"
+                ? "Not allowed to add songs. Check Firestore rules."
+                : err.message || "Error adding song.";
+          } finally {
+            submitBtn.disabled = false;
+          }
+        };
+      }
+
+      if (mode === "admin") {
+        setupAdminLogin();
+
+        ensureStateDoc()
+          .then(() => {
+            startStateListener((data) => {
+              renderAdminState(data, (index) => {
+                playFromQueueIndex(index).catch((err) => {
+                  console.error("playFromQueueIndex error", err.code, err.message);
+                  showError("Failed to start song: " + (err.message || "unknown"));
+                });
+              });
+            });
+          })
+          .catch(() => {});
+
+        document.getElementById("admin-clear-current-btn").onclick = () => {
+          clearCurrentSong().catch((err) => {
+            console.error("clearCurrentSong error", err.code, err.message);
+            showError("Failed to clear current song.");
+          });
+        };
+
+        document.getElementById("admin-reset-btn").onclick = () => {
+          if (!confirm("Reset the entire queue?")) return;
+          resetQueueDoc().catch((err) => {
+            console.error("resetQueueDoc error", err.code, err.message);
+            showError("Failed to reset queue.");
+          });
+        };
+      }
+
+      if (mode === "display") {
+        ensureStateDoc()
+          .then(() => {
+            startStateListener(renderDisplayState);
+          })
+          .catch(() => {});
+      }
+    })();
+  </script>
+</body>
+</html>
